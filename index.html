@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>런트래커 — 실시간 마라톤 위치 추적</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+KR:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root {
+    --bg:#0a0c0f; --surface:#11141a; --surface2:#181c24; --border:#1f2530;
+    --accent:#ff5c00; --accent2:#00e5a0; --text:#e8eaf0; --muted:#5a6070;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;overflow:hidden;}
+  .app{display:grid;grid-template-columns:340px 1fr;grid-template-rows:56px 1fr;height:100vh;}
+
+  /* Header */
+  header{grid-column:1/-1;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:1000;}
+  .logo{font-family:'Space Mono',monospace;font-size:16px;font-weight:700;letter-spacing:.05em;display:flex;align-items:center;gap:10px;}
+  .logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+  .header-event{font-size:12px;color:var(--muted);}
+  .header-time{font-family:'Space Mono',monospace;font-size:13px;color:var(--accent2);}
+
+  /* Sidebar */
+  .sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+
+  .search-area{padding:16px;border-bottom:1px solid var(--border);}
+  .search-label{font-size:10px;font-weight:600;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
+  .search-row{display:flex;gap:8px;}
+  .search-input{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Space Mono',monospace;font-size:18px;padding:10px 14px;border-radius:6px;outline:none;letter-spacing:.1em;transition:border-color .2s;}
+  .search-input:focus{border-color:var(--accent);}
+  .search-input::placeholder{color:var(--muted);font-size:13px;font-family:'Noto Sans KR',sans-serif;letter-spacing:0;}
+  .btn-add{background:var(--accent);border:none;color:white;font-weight:700;font-size:20px;width:46px;border-radius:6px;cursor:pointer;transition:opacity .15s;display:flex;align-items:center;justify-content:center;}
+  .btn-add:hover{opacity:.85;}
+  .btn-add.loading{opacity:.5;pointer-events:none;}
+
+  .mode-bar{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:6px;}
+  .mode-btn{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:11px;font-weight:600;padding:6px 8px;border-radius:4px;cursor:pointer;letter-spacing:.04em;transition:all .15s;font-family:'Noto Sans KR',sans-serif;}
+  .mode-btn.active{background:var(--accent);border-color:var(--accent);color:white;}
+
+  .runner-list{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:8px;}
+  .runner-list::-webkit-scrollbar{width:4px;}
+  .runner-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+  .runner-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;position:relative;cursor:pointer;transition:border-color .2s,transform .15s;animation:slideIn .25s ease;}
+  @keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+  .runner-card:hover{transform:translateX(2px);}
+  .runner-card.active-card{border-color:var(--rc,var(--accent));background:#14181f;}
+  .runner-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--rc,var(--accent));border-radius:10px 0 0 10px;}
+
+  .runner-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+  .runner-id-name{display:flex;align-items:baseline;gap:8px;}
+  .runner-bib{font-family:'Space Mono',monospace;font-size:20px;font-weight:700;}
+  .runner-name{font-size:13px;font-weight:600;}
+  .btn-remove{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:2px 6px;transition:color .15s;line-height:1;}
+  .btn-remove:hover{color:#ff4060;}
+
+  .prog-bg{height:4px;background:var(--border);border-radius:2px;margin-bottom:3px;}
+  .prog-fill{height:4px;border-radius:2px;transition:width 1s ease;}
+  .prog-labels{display:flex;justify-content:space-between;margin-bottom:8px;}
+  .prog-label{font-size:9px;color:var(--muted);font-family:'Space Mono',monospace;}
+
+  .runner-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;}
+  .stat-box{background:var(--surface);border-radius:5px;padding:5px 7px;}
+  .stat-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;}
+  .stat-val{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;}
+  .stat-val.hl{color:var(--accent2);}
+
+  /* Cheer panel */
+  .cheer-panel{border-top:1px solid var(--border);padding:12px 16px;}
+  .cheer-title{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
+  .cheer-list{display:flex;flex-direction:column;gap:5px;}
+  .cheer-item{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:border-color .15s;}
+  .cheer-item:hover{border-color:var(--accent2);}
+  .cheer-dist{font-family:'Space Mono',monospace;font-size:11px;color:var(--accent2);min-width:32px;}
+  .cheer-name{font-size:11px;font-weight:600;}
+  .cheer-eta{font-size:10px;color:var(--muted);}
+
+  /* Empty */
+  .empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);text-align:center;padding:20px;gap:8px;}
+  .empty-icon{font-size:36px;opacity:.4;}
+  .empty-text{font-size:13px;line-height:1.8;}
+
+  /* ── Detail Panel (지도 위 오버레이) ── */
+  .detail-panel{
+    position:absolute;top:12px;left:12px;z-index:600;width:290px;
+    background:rgba(15,18,24,.96);border:1px solid var(--border);border-radius:12px;
+    backdrop-filter:blur(10px);box-shadow:0 8px 40px rgba(0,0,0,.7);
+    display:none;animation:panelIn .25s ease;
+  }
+  .detail-panel.show{display:block;}
+  @keyframes panelIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+
+  .dp-header{padding:13px 14px 11px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .dp-bib-name{display:flex;align-items:baseline;gap:8px;}
+  .dp-bib{font-family:'Space Mono',monospace;font-size:22px;font-weight:700;}
+  .dp-name{font-size:13px;font-weight:600;}
+  .dp-gender{font-size:11px;color:var(--muted);margin-left:2px;}
+  .dp-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0 4px;line-height:1;}
+  .dp-close:hover{color:var(--text);}
+
+  .dp-body{padding:14px;}
+
+  /* Timeline */
+  .tl{display:flex;flex-direction:column;}
+  .tl-row{display:flex;align-items:stretch;gap:10px;}
+  .tl-spine{display:flex;flex-direction:column;align-items:center;width:20px;flex-shrink:0;}
+  .tl-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;margin-top:2px;border:2px solid var(--border);background:var(--bg);}
+  .tl-dot.passed{border-color:transparent;}
+  .tl-dot.current{animation:dotBlink 1.5s infinite;}
+  @keyframes dotBlink{0%,100%{box-shadow:0 0 0 3px rgba(255,92,0,.25)}50%{box-shadow:0 0 0 6px rgba(255,92,0,.08)}}
+  .tl-line{flex:1;width:2px;background:var(--border);min-height:18px;margin:2px 0;}
+  .tl-line.passed{opacity:.5;}
+  .tl-row:last-child .tl-line{display:none;}
+
+  .tl-content{flex:1;padding-bottom:13px;}
+  .tl-pt-name{font-size:11px;font-weight:700;letter-spacing:.04em;margin-bottom:2px;}
+  .tl-time{font-family:'Space Mono',monospace;font-size:14px;font-weight:700;}
+  .tl-time.t-passed{color:var(--text);}
+  .tl-time.t-est{color:var(--accent2);}
+  .tl-time.t-none{color:var(--muted);}
+  .tl-split{font-size:10px;color:var(--muted);margin-top:2px;}
+
+  .dp-eta-box{margin-top:2px;padding:10px 12px;background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.18);border-radius:8px;display:flex;align-items:center;justify-content:space-between;}
+  .dp-eta-lbl{font-size:11px;color:var(--accent2);font-weight:700;letter-spacing:.06em;}
+  .dp-eta-pace{font-size:10px;color:var(--muted);margin-top:2px;}
+  .dp-eta-val{font-family:'Space Mono',monospace;font-size:20px;font-weight:700;color:var(--accent2);}
+
+  /* Toast */
+  .toast{position:fixed;bottom:20px;right:20px;z-index:9999;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent2);padding:12px 16px;border-radius:8px;font-size:13px;animation:toastIn .3s ease;pointer-events:none;}
+  @keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+  .toast.err{border-left-color:#ff4060;}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo"><div class="logo-dot"></div>RUNTRACKER</div>
+    <div class="header-event" id="eventName">대회를 선택하세요</div>
+    <div class="header-time" id="clockEl">--:--:--</div>
+  </header>
+
+  <div class="sidebar">
+    <div class="search-area">
+      <div class="search-label">배번 검색</div>
+      <div class="search-row">
+        <input class="search-input" id="bibInput" type="number" placeholder="배번 입력 후 Enter"/>
+        <button class="btn-add" id="addBtn">+</button>
+      </div>
+    </div>
+    <div class="mode-bar">
+      <button class="mode-btn active" id="btn141" onclick="selectEvent(141)">RYW 서울</button>
+      <button class="mode-btn" id="btn142" onclick="selectEvent(142)">고양 하프</button>
+    </div>
+    <div class="runner-list" id="runnerList"></div>
+    <div class="cheer-panel" id="cheerPanel" style="display:none">
+      <div class="cheer-title">📣 응원 포인트</div>
+      <div class="cheer-list" id="cheerList"></div>
+    </div>
+  </div>
+
+  <div style="position:relative;overflow:hidden;">
+    <div id="map" style="width:100%;height:100%;"></div>
+    <div class="detail-panel" id="detailPanel">
+      <div class="dp-header">
+        <div class="dp-bib-name">
+          <span class="dp-bib" id="dpBib">#----</span>
+          <span class="dp-name" id="dpName">-</span>
+          <span class="dp-gender" id="dpGender"></span>
+        </div>
+        <button class="dp-close" onclick="closeDetail()">×</button>
+      </div>
+      <div class="dp-body">
+        <div class="tl" id="dpTl"></div>
+        <div class="dp-eta-box">
+          <div>
+            <div class="dp-eta-lbl">🏁 예상 도착 시각</div>
+            <div class="dp-eta-pace" id="dpPaceLine"></div>
+          </div>
+          <div class="dp-eta-val" id="dpEtaVal">--:--</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── 데이터 ─────────────────────────────────────────────────────────────────
+const EVENTS = {
+  141:{id:141,name:"2026 RYW Half Race Seoul",date:"2026-03-02",guntime:"07:30:00",
+    course:{distance:21.098,
+      path:[{lat:37.5713345586204,lng:126.97729793809815},{lat:37.57160667395403,lng:126.98978630327149},{lat:37.57106244229257,lng:126.9945069911377},{lat:37.57000798213145,lng:127.00141636156006},{lat:37.56898752260011,lng:127.0078536631958}],
+      points:[
+        {point_cd:"P0",name:"출발", distance:0,     lat:37.5713345586204, lng:126.97729793809815},
+        {point_cd:"P2",name:"5K",  distance:5,     lat:37.57160667395403,lng:126.98978630327149},
+        {point_cd:"P3",name:"10K", distance:10,    lat:37.57106244229257,lng:126.9945069911377},
+        {point_cd:"P4",name:"15K", distance:15,    lat:37.57000798213145,lng:127.00141636156006},
+        {point_cd:"P5",name:"도착", distance:21.098,lat:37.56898752260011,lng:127.0078536631958}
+      ]}},
+  142:{id:142,name:"2026 고양하프마라톤",date:"2026-04-05",guntime:"08:00:00",
+    course:{distance:21.098,
+      path:[{lat:37.6564,lng:126.8317},{lat:37.6601,lng:126.8450},{lat:37.6520,lng:126.8580},{lat:37.6480,lng:126.8450},{lat:37.6564,lng:126.8317}],
+      points:[
+        {point_cd:"P0",name:"출발", distance:0,     lat:37.6564,lng:126.8317},
+        {point_cd:"P2",name:"5K",  distance:5,     lat:37.6601,lng:126.8450},
+        {point_cd:"P3",name:"10K", distance:10,    lat:37.6520,lng:126.8580},
+        {point_cd:"P4",name:"15K", distance:15,    lat:37.6480,lng:126.8450},
+        {point_cd:"P5",name:"도착", distance:21.098,lat:37.6564,lng:126.8317}
+      ]}}
+};
+
+// 테스트용 모의 데이터 (실 API 연결 전)
+const MOCK = {
+  141:{
+    "1001":{num:"1001",name:"김민준",gender:"M",pace_nettime:"04:30",result_nettime:null,records:[{point_cd:"P0",time:"07:30:00"},{point_cd:"P2",time:"07:52:30"},{point_cd:"P3",time:"08:15:20"},{point_cd:"P4",time:"08:38:10"}]},
+    "2033":{num:"2033",name:"박서연",gender:"F",pace_nettime:"05:10",result_nettime:null,records:[{point_cd:"P0",time:"07:30:00"},{point_cd:"P2",time:"07:55:50"},{point_cd:"P3",time:"08:22:10"}]},
+    "5512":{num:"5512",name:"이지호",gender:"M",pace_nettime:"06:00",result_nettime:null,records:[{point_cd:"P0",time:"07:30:00"},{point_cd:"P2",time:"08:00:00"}]},
+    "9999":{num:"9999",name:"최수아",gender:"F",pace_nettime:"04:55",result_nettime:"01:44:03",records:[{point_cd:"P0",time:"07:30:00"},{point_cd:"P2",time:"07:54:35"},{point_cd:"P3",time:"08:19:10"},{point_cd:"P4",time:"08:43:45"},{point_cd:"P5",time:"09:14:03"}]},
+    "21296":{num:"21296",name:"유지연",gender:"F",pace_nettime:"05:03",result_nettime:"01:46:46",records:[{point_cd:"P0",time:"07:30:00"},{point_cd:"P2",time:"07:55:15"},{point_cd:"P3",time:"08:20:30"},{point_cd:"P4",time:"08:45:50"},{point_cd:"P5",time:"09:16:46"}]}
+  }
+};
+
+const CHEER_SPOTS = {
+  141:[
+    {name:"광화문광장 출발선",dist:"0K", distKm:0,   lat:37.5713,lng:126.9773},
+    {name:"청계천 5K 지점", dist:"5K", distKm:5,   lat:37.5716,lng:126.9898},
+    {name:"동대문 10K 지점",dist:"10K",distKm:10,  lat:37.5711,lng:126.9945},
+    {name:"잠실 결승선",    dist:"21K",distKm:21.1,lat:37.5690,lng:127.0079}
+  ]
+};
+
+const COLORS=['#ff5c00','#00e5a0','#4d9fff','#f0c040','#d44fff','#ff4060'];
+
+let currentEventId=141, runners=[], selectedBib=null;
+let map, courseLayer, cpMarkers=[];
+
+// ── 유틸 ──────────────────────────────────────────────────────────────────
+function t2s(t){if(!t)return 0;const p=t.split(':');return p.length===3?+p[0]*3600+ +p[1]*60+parseFloat(p[2]):0;}
+function s2hm(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;}
+function fmtTime(t){if(!t)return'--:--';const p=t.split(':');return`${p[0]}:${p[1]}`;}
+function lerpLL(a,b,t){return{lat:a.lat+(b.lat-a.lat)*t,lng:a.lng+(b.lng-a.lng)*t};}
+
+// ── 위치 추정 ─────────────────────────────────────────────────────────────
+function estimatePos(player,event){
+  const pts=event.course.points, recs=player.records||[];
+  if(!recs.length)return null;
+  const lastRec=recs[recs.length-1];
+  const lastPt=pts.find(p=>p.point_cd===lastRec.point_cd);
+  if(!lastPt)return null;
+  if(lastPt.point_cd==='P5')return{lat:lastPt.lat,lng:lastPt.lng,dist:lastPt.distance,finished:true};
+  const gunMs=new Date(`${event.date}T${event.guntime}`).getTime();
+  const elapsed=(Date.now()-gunMs)/1000;
+  const sinceCP=elapsed-t2s(lastRec.time);
+  const[pm,ps]=(player.pace_nettime||'06:00').split(':').map(Number);
+  const paceSec=pm*60+ps;
+  const moved=Math.max(0,sinceCP/paceSec);
+  const estDist=Math.min(lastPt.distance+moved,event.course.distance);
+  const nextPt=pts.find(p=>p.distance>lastPt.distance);
+  if(!nextPt)return{lat:lastPt.lat,lng:lastPt.lng,dist:estDist,finished:false};
+  const pos=lerpLL(lastPt,nextPt,Math.min(1,moved/(nextPt.distance-lastPt.distance)));
+  return{...pos,dist:estDist,finished:false};
+}
+
+function calcETA(player,event){
+  const pos=estimatePos(player,event);
+  if(!pos)return'--:--';
+  if(pos.finished)return'완주 🎉';
+  const[pm,ps]=(player.pace_nettime||'06:00').split(':').map(Number);
+  const sec=(event.course.distance-pos.dist)*(pm*60+ps);
+  return new Date(Date.now()+sec*1000).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ── API ───────────────────────────────────────────────────────────────────
+async function fetchPlayer(eventId,bib){
+  /* 실제 API 연결 시:
+  const res=await fetch(`https://www.myresult.co.kr/api/event/${eventId}/player/${bib}`);
+  if(!res.ok)throw new Error('선수를 찾을 수 없습니다');
+  return await res.json();
+  */
+  await new Promise(r=>setTimeout(r,500));
+  const p=MOCK[eventId]?.[String(bib)];
+  if(!p)throw new Error(`배번 ${bib}를 찾을 수 없습니다`);
+  return p;
+}
+
+// ── 지도 ─────────────────────────────────────────────────────────────────
+function initMap(event){
+  const c=event.course.path[0];
+  if(!map){
+    map=L.map('map',{center:[c.lat,c.lng],zoom:14,zoomControl:false});
+    L.control.zoom({position:'bottomright'}).addTo(map);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'©OpenStreetMap ©CARTO',maxZoom:19}).addTo(map);
+  } else {map.setView([c.lat,c.lng],14);}
+  if(courseLayer)courseLayer.remove();
+  cpMarkers.forEach(m=>m.remove());cpMarkers=[];
+  courseLayer=L.polyline(event.course.path.map(p=>[p.lat,p.lng]),{color:'#ff5c00',weight:3,opacity:.55,dashArray:'6,6'}).addTo(map);
+  event.course.points.forEach(pt=>{
+    const icon=L.divIcon({html:`<div style="background:#1f2530;border:2px solid #ff5c00;color:#e8eaf0;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;padding:3px 7px;border-radius:3px;white-space:nowrap;">${pt.name}</div>`,className:'',iconAnchor:[0,0]});
+    cpMarkers.push(L.marker([pt.lat,pt.lng],{icon}).addTo(map));
+  });
+}
+
+function updateMarkers(){
+  const ev=EVENTS[currentEventId];
+  runners.forEach(r=>{
+    const pos=estimatePos(r.player,ev);
+    if(!pos)return;
+    const icon=L.divIcon({html:`<div style="background:${r.color};color:#fff;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;padding:4px 8px;border-radius:20px;box-shadow:0 2px 10px rgba(0,0,0,.6);white-space:nowrap;border:2px solid rgba(255,255,255,.2)">#${r.player.num}</div>`,className:'',iconAnchor:[20,12]});
+    if(r.marker){r.marker.setLatLng([pos.lat,pos.lng]);r.marker.setIcon(icon);}
+    else{r.marker=L.marker([pos.lat,pos.lng],{icon}).addTo(map).on('click',()=>openDetail(r.bib));}
+  });
+}
+
+// ── Detail Panel ─────────────────────────────────────────────────────────
+function openDetail(bib){
+  const r=runners.find(r=>r.bib===bib);if(!r)return;
+  selectedBib=bib;
+  document.querySelectorAll('.runner-card').forEach(c=>c.classList.remove('active-card'));
+  document.getElementById('card-'+bib)?.classList.add('active-card');
+
+  const ev=EVENTS[currentEventId],player=r.player,pts=ev.course.points;
+  const recs=player.records||[];
+  const passedCds=recs.map(rc=>rc.point_cd);
+
+  document.getElementById('dpBib').textContent='#'+player.num;
+  document.getElementById('dpBib').style.color=r.color;
+  document.getElementById('dpName').textContent=player.name;
+  document.getElementById('dpGender').textContent=player.gender==='M'?'남':'여';
+
+  // 타임라인
+  const tl=document.getElementById('dpTl');tl.innerHTML='';
+  pts.forEach((pt,i)=>{
+    const rec=recs.find(rc=>rc.point_cd===pt.point_cd);
+    const passed=!!rec;
+    const lastPassedIdx=pts.findIndex(p=>p.point_cd===passedCds[passedCds.length-1]);
+    const isCurrent=!passed&&i===lastPassedIdx+1;
+
+    // 구간 분할 기록
+    let splitText='';
+    if(passed&&i>0){
+      const prevRec=recs.find(rc=>rc.point_cd===pts[i-1]?.point_cd);
+      if(prevRec){
+        const diff=t2s(rec.time)-t2s(prevRec.time);
+        const dist=pt.distance-pts[i-1].distance;
+        const pace=diff/dist;
+        const pm2=Math.floor(pace/60),ps2=Math.floor(pace%60);
+        splitText=`구간 ${s2hm(diff)} · 페이스 ${pm2}'${String(ps2).padStart(2,'0')}"`;
+      }
+    }
+
+    // 시각 표시
+    let timeStr='--:--',tClass='t-none';
+    if(passed){
+      timeStr=fmtTime(rec.time);tClass='t-passed';
+    } else {
+      const lastRec=recs[recs.length-1];
+      if(lastRec){
+        const lpt=pts.find(p=>p.point_cd===lastRec.point_cd);
+        const[pm2,ps2]=(player.pace_nettime||'06:00').split(':').map(Number);
+        const paceSec=pm2*60+ps2;
+        const distLeft=pt.distance-(lpt?.distance||0);
+        const sec=t2s(lastRec.time)+distLeft*paceSec;
+        // 대회 날짜 기준 절대 시각으로 변환
+        const base=new Date(`${ev.date}T00:00:00`).getTime();
+        const d=new Date(base+sec*1000);
+        timeStr=d.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+        tClass='t-est';
+      }
+    }
+
+    const row=document.createElement('div');row.className='tl-row';
+    row.innerHTML=`
+      <div class="tl-spine">
+        <div class="tl-dot ${passed?'passed':isCurrent?'current':''}" style="${passed?'background:'+r.color+';border-color:'+r.color:isCurrent?'background:'+r.color+';border-color:'+r.color:''}"></div>
+        <div class="tl-line ${passed?'passed':''}" style="${passed?'background:'+r.color:''}"></div>
+      </div>
+      <div class="tl-content">
+        <div class="tl-pt-name" style="color:${passed||isCurrent?r.color:'var(--muted)'}">
+          ${pt.name} <span style="font-size:9px;color:var(--muted);font-weight:400;font-family:'Space Mono',monospace">${pt.distance}km</span>
+        </div>
+        <div class="tl-time ${tClass}">${timeStr}</div>
+        ${splitText?`<div class="tl-split">${splitText}</div>`:''}
+      </div>`;
+    tl.appendChild(row);
+  });
+
+  // ETA
+  const eta=calcETA(player,ev);
+  document.getElementById('dpEtaVal').textContent=eta;
+  document.getElementById('dpPaceLine').textContent=`현재 페이스 ${player.pace_nettime||'--'} /km`;
+
+  document.getElementById('detailPanel').classList.add('show');
+  const pos=estimatePos(player,ev);
+  if(pos&&map)map.setView([pos.lat,pos.lng],16,{animate:true});
+}
+
+function closeDetail(){
+  selectedBib=null;
+  document.getElementById('detailPanel').classList.remove('show');
+  document.querySelectorAll('.runner-card').forEach(c=>c.classList.remove('active-card'));
+}
+
+// ── 러너 카드 ─────────────────────────────────────────────────────────────
+function renderRunners(){
+  const ev=EVENTS[currentEventId],list=document.getElementById('runnerList');
+  if(!runners.length){
+    list.innerHTML=`<div class="empty-state"><div class="empty-icon">🏃</div><div class="empty-text">배번을 입력하고<br>+ 버튼 또는 Enter를 눌러주세요<br><span style="font-size:11px;opacity:.6">테스트 배번: 1001, 2033, 5512, 9999, 21296</span></div></div>`;
+    document.getElementById('cheerPanel').style.display='none';return;
+  }
+  list.innerHTML='';
+  runners.forEach(r=>{
+    const pos=estimatePos(r.player,ev);
+    const pct=pos?Math.min(100,(pos.dist/ev.course.distance)*100):0;
+    const eta=calcETA(r.player,ev);
+    const card=document.createElement('div');
+    card.className='runner-card'+(selectedBib===r.bib?' active-card':'');
+    card.id='card-'+r.bib;
+    card.style.setProperty('--rc',r.color);
+    card.innerHTML=`
+      <div class="runner-top">
+        <div class="runner-id-name">
+          <span class="runner-bib" style="color:${r.color}">#${r.player.num}</span>
+          <span class="runner-name">${r.player.name} (${r.player.gender==='M'?'남':'여'})</span>
+        </div>
+        <button class="btn-remove" id="rm-${r.bib}">×</button>
+      </div>
+      <div class="prog-bg"><div class="prog-fill" style="width:${pct}%;background:${r.color}"></div></div>
+      <div class="prog-labels">
+        <span class="prog-label">0K</span>
+        <span class="prog-label" style="color:${r.color}">${pos?(pos.finished?'완주🎉':pos.dist.toFixed(1)+'K'):'--'}</span>
+        <span class="prog-label">21.1K</span>
+      </div>
+      <div class="runner-stats">
+        <div class="stat-box"><div class="stat-label">페이스</div><div class="stat-val">${r.player.pace_nettime||'--'}<span style="font-size:9px;color:var(--muted)">/km</span></div></div>
+        <div class="stat-box"><div class="stat-label">현재위치</div><div class="stat-val">${pos?pos.dist.toFixed(1)+'K':'--'}</div></div>
+        <div class="stat-box"><div class="stat-label">예상도착</div><div class="stat-val hl">${eta}</div></div>
+      </div>`;
+    card.addEventListener('click',()=>openDetail(r.bib));
+    document.getElementById('rm-'+r.bib)?.addEventListener('click',(e)=>{e.stopPropagation();removeRunner(r.bib);});
+    list.appendChild(card);
+    // 삭제 버튼 이벤트 재연결 (innerHTML 덮어쓰기 후)
+    card.querySelector('.btn-remove').addEventListener('click',(e)=>{e.stopPropagation();removeRunner(r.bib);});
+  });
+  renderCheer();
+}
+
+function renderCheer(){
+  const spots=CHEER_SPOTS[currentEventId];
+  const panel=document.getElementById('cheerPanel');
+  if(!spots||!runners.length){panel.style.display='none';return;}
+  panel.style.display='block';
+  const ev=EVENTS[currentEventId];
+  document.getElementById('cheerList').innerHTML=spots.map(sp=>{
+    const etas=runners.map(r=>{
+      const pos=estimatePos(r.player,ev);if(!pos)return Infinity;
+      const[pm,ps]=(r.player.pace_nettime||'06:00').split(':').map(Number);
+      const dist=sp.distKm-pos.dist;if(dist<0)return Infinity;
+      return Date.now()+(dist*(pm*60+ps))*1000;
+    }).filter(t=>t!==Infinity);
+    const earliest=etas.length?new Date(Math.min(...etas)).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}):'--:--';
+    return`<div class="cheer-item" onclick="map.setView([${sp.lat},${sp.lng}],17,{animate:true})"><span class="cheer-dist">${sp.dist}</span><div><div class="cheer-name">${sp.name}</div><div class="cheer-eta">첫 주자 예상 ${earliest}</div></div><span>📍</span></div>`;
+  }).join('');
+}
+
+// ── 배번 추가/삭제 ────────────────────────────────────────────────────────
+async function addRunner(){
+  const input=document.getElementById('bibInput');
+  const bib=input.value.trim();if(!bib)return;
+  if(runners.find(r=>r.bib===bib)){showToast('이미 추가된 배번입니다','err');return;}
+  if(runners.length>=6){showToast('최대 6명까지 가능합니다','err');return;}
+  const btn=document.getElementById('addBtn');
+  btn.classList.add('loading');btn.textContent='…';
+  try{
+    const player=await fetchPlayer(currentEventId,bib);
+    const color=COLORS[runners.length%COLORS.length];
+    runners.push({bib,player,color,marker:null});
+    input.value='';
+    renderRunners();updateMarkers();
+    openDetail(bib);
+    showToast(`✓ ${player.name} (#${bib}) 추가됨`);
+  }catch(e){showToast(e.message,'err');}
+  finally{btn.classList.remove('loading');btn.textContent='+';}
+}
+
+function removeRunner(bib){
+  const r=runners.find(r=>r.bib===bib);
+  if(r?.marker)r.marker.remove();
+  runners=runners.filter(r=>r.bib!==bib);
+  if(selectedBib===bib)closeDetail();
+  renderRunners();
+}
+
+function selectEvent(id){
+  currentEventId=id;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('btn'+id).classList.add('active');
+  document.getElementById('eventName').textContent=EVENTS[id].name;
+  runners.forEach(r=>{if(r.marker){r.marker.remove();r.marker=null;}});
+  runners=[];closeDetail();initMap(EVENTS[id]);renderRunners();
+}
+
+function showToast(msg,type=''){
+  document.querySelector('.toast')?.remove();
+  const t=document.createElement('div');
+  t.className='toast'+(type==='err'?' err':'');
+  t.textContent=msg;document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2500);
+}
+
+// ── 초기화 ───────────────────────────────────────────────────────────────
+window.addEventListener('load',()=>{
+  selectEvent(141);
+  document.getElementById('addBtn').onclick=addRunner;
+  document.getElementById('bibInput').addEventListener('keydown',e=>{if(e.key==='Enter')addRunner();});
+  setInterval(()=>{renderRunners();updateMarkers();if(selectedBib)openDetail(selectedBib);},30000);
+  setInterval(()=>{document.getElementById('clockEl').textContent=new Date().toLocaleTimeString('ko-KR');},1000);
+});
+</script>
+</body>
+</html>
