@@ -703,12 +703,12 @@ function renderRunners(){
       <div class="prog-bg"><div class="prog-fill" style="width:${pct}%;background:${r.color}"></div></div>
       <div class="prog-labels">
         <span class="prog-label">0K</span>
-        <span class="prog-label" style="color:${r.color}">${pos?(pos.finished?'완주🎉':pos.dist.toFixed(1)+'K'):'--'}</span>
+        <span class="prog-label" style="color:${r.color}">${pos?(pos.finished?'완주🎉':pos.dist.toFixed(1)+'K'):(!r.player.records||!r.player.records.length?'출발 전':'--')}</span>
         <span class="prog-label">21.1K</span>
       </div>
       <div class="runner-stats">
         <div class="stat-box"><div class="stat-label">페이스</div><div class="stat-val">${r.player.pace_nettime||'--'}<span style="font-size:9px;color:var(--muted)">/km</span></div></div>
-        <div class="stat-box"><div class="stat-label">현재위치</div><div class="stat-val">${pos?pos.dist.toFixed(1)+'K':'--'}</div></div>
+        <div class="stat-box"><div class="stat-label">현재위치</div><div class="stat-val">${pos?pos.dist.toFixed(1)+'K':(!r.player.records||!r.player.records.length?'대기중':'--')}</div></div>
         <div class="stat-box"><div class="stat-label">예상도착</div><div class="stat-val hl">${eta}</div></div>
       </div>`;
 
@@ -759,6 +759,33 @@ function renderCheer(){
 }
 
 // ── 배번 추가/삭제 ─────────────────────────────────────────────────────────
+
+// localStorage에 현재 이벤트의 배번 목록 저장
+function saveBibs() {
+  const key = `bibs_${currentEventId}`;
+  const data = runners.map(r => ({ bib: r.bib, color: r.color }));
+  localStorage.setItem(key, JSON.stringify(data));
+}
+
+// localStorage에서 배번 목록 불러와서 자동 추가
+async function loadSavedBibs(eventId) {
+  const key = `bibs_${eventId}`;
+  const saved = JSON.parse(localStorage.getItem(key) || '[]');
+  if (!saved.length) return;
+  showToast(`저장된 배번 ${saved.length}명 불러오는 중...`);
+  for (const entry of saved) {
+    if (runners.find(r => r.bib === entry.bib)) continue;
+    try {
+      const player = await fetchPlayer(eventId, entry.bib);
+      runners.push({ bib: entry.bib, player, color: entry.color || COLORS[runners.length % COLORS.length], marker: null, progressLine: null, photo: null });
+    } catch(e) {
+      console.warn(`배번 ${entry.bib} 불러오기 실패:`, e.message);
+    }
+  }
+  renderRunners();
+  updateMarkers();
+}
+
 async function addRunner(){
   const input=document.getElementById('bibInput');
   const bib=input.value.trim();if(!bib)return;
@@ -771,9 +798,11 @@ async function addRunner(){
     const color=COLORS[runners.length%COLORS.length];
     runners.push({bib,player,color,marker:null,progressLine:null,photo:null});
     input.value='';
+    saveBibs(); // 저장
     renderRunners();updateMarkers();
     openDetail(bib);
-    showToast(`✓ ${player.name} (#${bib}) 추가됨`);
+    const status = (!player.records || player.records.length === 0) ? '출발 전으로 저장됨' : '추가됨';
+    showToast(`✓ ${player.name} (#${bib}) ${status}`);
   }catch(e){showToast(e.message,'err');}
   finally{btn.classList.remove('loading');btn.textContent='+';}
 }
@@ -784,6 +813,7 @@ function removeRunner(bib){
   if(r?.progressLine)r.progressLine.remove();
   runners=runners.filter(r=>r.bib!==bib);
   if(selectedBib===bib)closeDetail();
+  saveBibs(); // 저장
   renderRunners();
 }
 
@@ -797,6 +827,21 @@ function selectEvent(id){
     if(r.progressLine){r.progressLine.remove();r.progressLine=null;}
   });
   runners=[];closeDetail();initMap(EVENTS[id]);renderRunners();
+  loadSavedBibs(id); // 저장된 배번 자동 복원
+}
+
+// 폴링: 저장된 배번들의 기록을 주기적으로 갱신
+async function pollRunners() {
+  if (!runners.length) return;
+  for (const r of runners) {
+    try {
+      const updated = await fetchPlayerDetail(currentEventId, r.player.num || r.bib);
+      r.player = { ...r.player, ...updated };
+    } catch(e) { /* 조용히 넘김 */ }
+  }
+  renderRunners();
+  updateMarkers();
+  if (selectedBib) openDetail(selectedBib);
 }
 
 function showToast(msg,type=''){
@@ -809,13 +854,10 @@ function showToast(msg,type=''){
 
 // ── 초기화 ────────────────────────────────────────────────────────────────
 window.addEventListener('load',()=>{
-  selectEvent(141);
+  selectEvent(141); // selectEvent 안에서 loadSavedBibs 호출됨
   document.getElementById('addBtn').onclick=addRunner;
   document.getElementById('bibInput').addEventListener('keydown',e=>{if(e.key==='Enter')addRunner();});
-  setInterval(()=>{
-    renderRunners();updateMarkers();
-    if(selectedBib)openDetail(selectedBib);
-  },30000);
+  setInterval(pollRunners, 30000); // 30초마다 기록 갱신
   setInterval(()=>{
     document.getElementById('clockEl').textContent=new Date().toLocaleTimeString('ko-KR');
   },1000);
