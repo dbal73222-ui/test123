@@ -381,23 +381,26 @@ async function fetchPlayer(eventId, bib) {
   const searchRes = await fetch(`${PROXY}/api/event/${eventId}/player?q=${encodeURIComponent(bib)}`);
   if (!searchRes.ok) throw new Error('서버 연결 실패');
   const searchData = await searchRes.json();
+  console.log('🔍 검색 원본 결과:', JSON.stringify(searchData.map(p => ({num: p.num, name: p.name, gender: p.gender, course_cd: p.course_cd})), null, 2));
   if (!searchData || !searchData.length) throw new Error(`"${bib}" 검색 결과가 없습니다`);
 
-  // 배번 입력인 경우: 숫자로만 이루어져 있으면 정확히 일치하는 것만 필터링
   const isNumeric = /^\d+$/.test(bib.trim());
-  let filtered = searchData;
+
   if (isNumeric) {
-    filtered = searchData.filter(p => String(p.num) === String(bib).trim());
-    if (!filtered.length) throw new Error(`배번 ${bib}를 찾을 수 없습니다`);
+    // 배번 정확히 일치하는 것만 필터링
+    const exact = searchData.filter(p => String(p.num) === String(bib).trim());
+    if (!exact.length) throw new Error(`배번 ${bib}를 찾을 수 없습니다`);
+
+    // 정확히 1명이면 바로 조회
+    if (exact.length === 1) return await fetchPlayerDetail(eventId, exact[0].num);
+
+    // 동일 배번이 여러 코스에 있으면 (10K / 하프 등) 선택 팝업
+    return await showSearchResults(exact, eventId);
   }
 
-  // 정확히 1명이면 바로 상세 조회
-  if (filtered.length === 1) {
-    return await fetchPlayerDetail(eventId, filtered[0].num);
-  }
-
-  // 여러 명이면 선택 팝업 (이름 검색 시)
-  return await showSearchResults(filtered, eventId);
+  // 이름 검색: 결과 1명이면 바로, 여러 명이면 팝업
+  if (searchData.length === 1) return await fetchPlayerDetail(eventId, searchData[0].num);
+  return await showSearchResults(searchData, eventId);
 }
 
 async function fetchPlayerDetail(eventId, num) {
@@ -454,7 +457,7 @@ function showSearchResults(results, eventId) {
             <span style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:#ff5c00;min-width:50px">#${p.num}</span>
             <div>
               <div style="font-size:13px;font-weight:600;">${p.name}</div>
-              <div style="font-size:11px;color:#5a6070;">${p.gender === 'M' ? '남' : '여'} · ${p.team_name || ''}</div>
+              <div style="font-size:11px;color:#5a6070;">${p.gender === 'M' ? '남' : '여'} · ${p.course_cd || p.team_name || ''}</div>
             </div>
           </div>`).join('')}
       </div>`;
