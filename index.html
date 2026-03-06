@@ -258,7 +258,13 @@ let currentEventId=141, runners=[], selectedBib=null;
 let map, courseBaseLine, cpMarkers=[];
 
 // ── 유틸 ──────────────────────────────────────────────────────────────────
-function t2s(t){if(!t)return 0;const p=t.split(':');return p.length===3?+p[0]*3600+ +p[1]*60+parseFloat(p[2]):0;}
+function t2s(t){
+  if(!t)return 0;
+  const p=t.split(':');
+  return p.length===3?+p[0]*3600+ +p[1]*60+parseFloat(p[2]):0;
+}
+// records의 시간 필드 추출 (time_point 또는 time 둘 다 대응)
+function recTime(rec){ return rec.time_point || rec.time || null; }
 function s2hm(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;}
 function fmtTime(t){if(!t)return'--:--';const p=t.split(':');return`${p[0]}:${p[1]}`;}
 
@@ -318,26 +324,23 @@ function estimatePos(player, event){
   const lastPt=pts.find(p=>p.point_cd===lastRec.point_cd);
   if(!lastPt)return null;
 
-  // 완주
   if(lastPt.point_cd==='P5'){
-    const frac=1;
-    const coord=pointAtFrac(event.course.path,frac);
-    return{...coord,dist:event.course.distance,frac,finished:true};
+    const coord=pointAtFrac(event.course.path,1);
+    return{...coord,dist:event.course.distance,frac:1,finished:true};
   }
 
   const gunMs=new Date(`${event.date}T${event.guntime}`).getTime();
   const elapsed=(Date.now()-gunMs)/1000;
-  const sinceCP=elapsed-t2s(lastRec.time);
+  const sinceCP=elapsed-t2s(recTime(lastRec));
 
-  // 직전 구간 페이스로 갱신 (더 현실적)
   let paceSec;
   const rIdx=recs.length-1;
   if(rIdx>0){
     const prev=recs[rIdx-1], prevPt=pts.find(p=>p.point_cd===prev.point_cd);
     if(prevPt){
-      const timeDiff=t2s(lastRec.time)-t2s(prev.time);
-      const distDiff=lastPt.distance-prevPt.distance;
-      paceSec=distDiff>0?timeDiff/distDiff:60*6;
+      const timeDiff=t2s(recTime(lastRec))-t2s(recTime(prev));
+      const distDiff=parseFloat(lastPt.distance)-parseFloat(prevPt.distance);
+      if(distDiff>0) paceSec=timeDiff/distDiff;
     }
   }
   if(!paceSec){
@@ -346,7 +349,7 @@ function estimatePos(player, event){
   }
 
   const moved=Math.max(0,sinceCP/paceSec);
-  const estDist=Math.min(lastPt.distance+moved,event.course.distance);
+  const estDist=Math.min(parseFloat(lastPt.distance)+moved, event.course.distance);
   const frac=estDist/event.course.distance;
   const coord=pointAtFrac(event.course.path,frac);
   return{...coord,dist:estDist,frac,finished:false};
@@ -411,7 +414,6 @@ async function fetchPlayerDetail(eventId, num) {
       }
     }
   }
-  console.log('📦 records 원본 데이터:', JSON.stringify(detail.records, null, 2));
   return detail;
 }
 
@@ -606,8 +608,8 @@ function openDetail(bib){
     if(passed&&i>0){
       const prevRec=recs.find(rc=>rc.point_cd===pts[i-1]?.point_cd);
       if(prevRec && rec){
-        const pace = calcPace(rec.time, prevRec.time, pt.distance - pts[i-1].distance);
-        if(pace && pace.diff > 0){
+        const pace=calcPace(recTime(rec), recTime(prevRec), parseFloat(pt.distance)-parseFloat(pts[i-1].distance));
+        if(pace && pace.diff>0){
           splitText=`구간 ${s2hm(pace.diff)} · 페이스 ${pace.str}`;
         }
       }
@@ -615,14 +617,14 @@ function openDetail(bib){
 
     let timeStr='--:--',tClass='t-none';
     if(passed){
-      timeStr=fmtTime(rec.time);tClass='t-passed';
+      timeStr=fmtTime(recTime(rec)); tClass='t-passed';
     } else if(recs.length>0){
       const lastRec=recs[recs.length-1];
       const lpt=pts.find(p=>p.point_cd===lastRec.point_cd);
       const[pm2,ps2]=(player.pace_nettime||'06:00').split(':').map(Number);
       const paceSec=pm2*60+ps2;
-      const distLeft=pt.distance-(lpt?.distance||0);
-      const sec=t2s(lastRec.time)+distLeft*paceSec;
+      const distLeft=parseFloat(pt.distance)-parseFloat(lpt?.distance||0);
+      const sec=t2s(recTime(lastRec))+distLeft*paceSec;
       const base=new Date(`${ev.date}T00:00:00`).getTime();
       timeStr=new Date(base+sec*1000).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
       tClass='t-est';
