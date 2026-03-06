@@ -383,13 +383,21 @@ async function fetchPlayer(eventId, bib) {
   const searchData = await searchRes.json();
   if (!searchData || !searchData.length) throw new Error(`"${bib}" 검색 결과가 없습니다`);
 
-  // 여러 명이면 선택 팝업 표시
-  if (searchData.length > 1) {
-    return await showSearchResults(searchData, eventId);
+  // 배번 입력인 경우: 숫자로만 이루어져 있으면 정확히 일치하는 것만 필터링
+  const isNumeric = /^\d+$/.test(bib.trim());
+  let filtered = searchData;
+  if (isNumeric) {
+    filtered = searchData.filter(p => String(p.num) === String(bib).trim());
+    if (!filtered.length) throw new Error(`배번 ${bib}를 찾을 수 없습니다`);
   }
 
-  // 1명이면 바로 상세 조회
-  return await fetchPlayerDetail(eventId, searchData[0].num);
+  // 정확히 1명이면 바로 상세 조회
+  if (filtered.length === 1) {
+    return await fetchPlayerDetail(eventId, filtered[0].num);
+  }
+
+  // 여러 명이면 선택 팝업 (이름 검색 시)
+  return await showSearchResults(filtered, eventId);
 }
 
 async function fetchPlayerDetail(eventId, num) {
