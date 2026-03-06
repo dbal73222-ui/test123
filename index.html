@@ -27,7 +27,6 @@
 
   /* Sidebar */
   .sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
-
   .search-area{padding:16px;border-bottom:1px solid var(--border);}
   .search-label{font-size:10px;font-weight:600;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
   .search-row{display:flex;gap:8px;}
@@ -37,7 +36,6 @@
   .btn-add{background:var(--accent);border:none;color:white;font-weight:700;font-size:20px;width:46px;border-radius:6px;cursor:pointer;transition:opacity .15s;display:flex;align-items:center;justify-content:center;}
   .btn-add:hover{opacity:.85;}
   .btn-add.loading{opacity:.5;pointer-events:none;}
-
   .mode-bar{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:6px;}
   .mode-btn{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:11px;font-weight:600;padding:6px 8px;border-radius:4px;cursor:pointer;letter-spacing:.04em;transition:all .15s;font-family:'Noto Sans KR',sans-serif;}
   .mode-btn.active{background:var(--accent);border-color:var(--accent);color:white;}
@@ -46,24 +44,31 @@
   .runner-list::-webkit-scrollbar{width:4px;}
   .runner-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 
+  /* Runner card */
   .runner-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;position:relative;cursor:pointer;transition:border-color .2s,transform .15s;animation:slideIn .25s ease;}
   @keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
   .runner-card:hover{transform:translateX(2px);}
   .runner-card.active-card{border-color:var(--rc,var(--accent));background:#14181f;}
   .runner-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--rc,var(--accent));border-radius:10px 0 0 10px;}
+  .runner-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .runner-left{display:flex;align-items:center;gap:10px;}
 
-  .runner-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
-  .runner-id-name{display:flex;align-items:baseline;gap:8px;}
-  .runner-bib{font-family:'Space Mono',monospace;font-size:20px;font-weight:700;}
-  .runner-name{font-size:13px;font-weight:600;}
+  /* 프로필 사진 (카드 내) */
+  .card-avatar{width:36px;height:36px;border-radius:50%;border:2px solid var(--rc,var(--accent));overflow:hidden;flex-shrink:0;background:var(--surface);cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;}
+  .card-avatar img{width:100%;height:100%;object-fit:cover;}
+  .card-avatar .avatar-placeholder{font-size:13px;font-weight:700;color:var(--rc,var(--accent));font-family:'Space Mono',monospace;}
+  .card-avatar:hover::after{content:'📷';position:absolute;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;font-size:14px;}
+  .card-avatar input[type=file]{display:none;}
+
+  .runner-id-name{display:flex;flex-direction:column;gap:1px;}
+  .runner-bib{font-family:'Space Mono',monospace;font-size:16px;font-weight:700;line-height:1;}
+  .runner-name{font-size:12px;color:var(--muted);}
   .btn-remove{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:2px 6px;transition:color .15s;line-height:1;}
   .btn-remove:hover{color:#ff4060;}
-
   .prog-bg{height:4px;background:var(--border);border-radius:2px;margin-bottom:3px;}
   .prog-fill{height:4px;border-radius:2px;transition:width 1s ease;}
   .prog-labels{display:flex;justify-content:space-between;margin-bottom:8px;}
   .prog-label{font-size:9px;color:var(--muted);font-family:'Space Mono',monospace;}
-
   .runner-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;}
   .stat-box{background:var(--surface);border-radius:5px;padding:5px 7px;}
   .stat-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;}
@@ -85,27 +90,20 @@
   .empty-icon{font-size:36px;opacity:.4;}
   .empty-text{font-size:13px;line-height:1.8;}
 
-  /* ── Detail Panel (지도 위 오버레이) ── */
-  .detail-panel{
-    position:absolute;top:12px;left:12px;z-index:600;width:290px;
-    background:rgba(15,18,24,.96);border:1px solid var(--border);border-radius:12px;
-    backdrop-filter:blur(10px);box-shadow:0 8px 40px rgba(0,0,0,.7);
-    display:none;animation:panelIn .25s ease;
-  }
+  /* Detail Panel */
+  .detail-panel{position:absolute;top:12px;left:12px;z-index:600;width:290px;background:rgba(15,18,24,.96);border:1px solid var(--border);border-radius:12px;backdrop-filter:blur(10px);box-shadow:0 8px 40px rgba(0,0,0,.7);display:none;animation:panelIn .25s ease;}
   .detail-panel.show{display:block;}
   @keyframes panelIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-
   .dp-header{padding:13px 14px 11px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
-  .dp-bib-name{display:flex;align-items:baseline;gap:8px;}
-  .dp-bib{font-family:'Space Mono',monospace;font-size:22px;font-weight:700;}
-  .dp-name{font-size:13px;font-weight:600;}
-  .dp-gender{font-size:11px;color:var(--muted);margin-left:2px;}
+  .dp-header-left{display:flex;align-items:center;gap:10px;}
+  .dp-avatar{width:40px;height:40px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid var(--dp-color,var(--accent));}
+  .dp-avatar img{width:100%;height:100%;object-fit:cover;}
+  .dp-avatar-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:13px;font-weight:700;background:var(--surface2);}
+  .dp-bib{font-family:'Space Mono',monospace;font-size:18px;font-weight:700;line-height:1;}
+  .dp-name-gender{font-size:12px;color:var(--muted);margin-top:1px;}
   .dp-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0 4px;line-height:1;}
   .dp-close:hover{color:var(--text);}
-
   .dp-body{padding:14px;}
-
-  /* Timeline */
   .tl{display:flex;flex-direction:column;}
   .tl-row{display:flex;align-items:stretch;gap:10px;}
   .tl-spine{display:flex;flex-direction:column;align-items:center;width:20px;flex-shrink:0;}
@@ -116,7 +114,6 @@
   .tl-line{flex:1;width:2px;background:var(--border);min-height:18px;margin:2px 0;}
   .tl-line.passed{opacity:.5;}
   .tl-row:last-child .tl-line{display:none;}
-
   .tl-content{flex:1;padding-bottom:13px;}
   .tl-pt-name{font-size:11px;font-weight:700;letter-spacing:.04em;margin-bottom:2px;}
   .tl-time{font-family:'Space Mono',monospace;font-size:14px;font-weight:700;}
@@ -124,7 +121,6 @@
   .tl-time.t-est{color:var(--accent2);}
   .tl-time.t-none{color:var(--muted);}
   .tl-split{font-size:10px;color:var(--muted);margin-top:2px;}
-
   .dp-eta-box{margin-top:2px;padding:10px 12px;background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.18);border-radius:8px;display:flex;align-items:center;justify-content:space-between;}
   .dp-eta-lbl{font-size:11px;color:var(--accent2);font-weight:700;letter-spacing:.06em;}
   .dp-eta-pace{font-size:10px;color:var(--muted);margin-top:2px;}
@@ -165,12 +161,18 @@
 
   <div style="position:relative;overflow:hidden;">
     <div id="map" style="width:100%;height:100%;"></div>
+
+    <!-- Detail Panel -->
     <div class="detail-panel" id="detailPanel">
       <div class="dp-header">
-        <div class="dp-bib-name">
-          <span class="dp-bib" id="dpBib">#----</span>
-          <span class="dp-name" id="dpName">-</span>
-          <span class="dp-gender" id="dpGender"></span>
+        <div class="dp-header-left">
+          <div class="dp-avatar" id="dpAvatar">
+            <div class="dp-avatar-placeholder" id="dpAvatarPh">?</div>
+          </div>
+          <div>
+            <div class="dp-bib" id="dpBib">#----</div>
+            <div class="dp-name-gender" id="dpNameGender">-</div>
+          </div>
         </div>
         <button class="dp-close" onclick="closeDetail()">×</button>
       </div>
@@ -189,36 +191,53 @@
 </div>
 
 <script>
-// ── 데이터 ─────────────────────────────────────────────────────────────────
+// ── 이벤트 데이터 ──────────────────────────────────────────────────────────
 const EVENTS = {
   141:{id:141,name:"2026 RYW Half Race Seoul",date:"2026-03-02",guntime:"07:30:00",
     course:{distance:21.098,
-      path:[{lat:37.5713345586204,lng:126.97729793809815},{lat:37.57160667395403,lng:126.98978630327149},{lat:37.57106244229257,lng:126.9945069911377},{lat:37.57000798213145,lng:127.00141636156006},{lat:37.56898752260011,lng:127.0078536631958}],
+      path:[
+        {lat:37.5713345586204,  lng:126.97729793809815},
+        {lat:37.5718,           lng:126.9810},
+        {lat:37.5720,           lng:126.9850},
+        {lat:37.57160667395403, lng:126.98978630327149},
+        {lat:37.5714,           lng:126.9920},
+        {lat:37.57106244229257, lng:126.9945069911377},
+        {lat:37.5706,           lng:126.9975},
+        {lat:37.57000798213145, lng:127.00141636156006},
+        {lat:37.5695,           lng:127.0045},
+        {lat:37.56898752260011, lng:127.0078536631958}
+      ],
       points:[
-        {point_cd:"P0",name:"출발", distance:0,     lat:37.5713345586204, lng:126.97729793809815},
-        {point_cd:"P2",name:"5K",  distance:5,     lat:37.57160667395403,lng:126.98978630327149},
-        {point_cd:"P3",name:"10K", distance:10,    lat:37.57106244229257,lng:126.9945069911377},
-        {point_cd:"P4",name:"15K", distance:15,    lat:37.57000798213145,lng:127.00141636156006},
-        {point_cd:"P5",name:"도착", distance:21.098,lat:37.56898752260011,lng:127.0078536631958}
+        {point_cd:"P0",name:"출발", distance:0,      lat:37.5713345586204, lng:126.97729793809815},
+        {point_cd:"P2",name:"5K",  distance:5,      lat:37.57160667395403,lng:126.98978630327149},
+        {point_cd:"P3",name:"10K", distance:10,     lat:37.57106244229257,lng:126.9945069911377},
+        {point_cd:"P4",name:"15K", distance:15,     lat:37.57000798213145,lng:127.00141636156006},
+        {point_cd:"P5",name:"도착", distance:21.098, lat:37.56898752260011,lng:127.0078536631958}
       ]}},
   142:{id:142,name:"2026 고양하프마라톤",date:"2026-04-05",guntime:"08:00:00",
     course:{distance:21.098,
-      path:[{lat:37.6564,lng:126.8317},{lat:37.6601,lng:126.8450},{lat:37.6520,lng:126.8580},{lat:37.6480,lng:126.8450},{lat:37.6564,lng:126.8317}],
+      path:[
+        {lat:37.6564,lng:126.8317},{lat:37.6580,lng:126.8370},
+        {lat:37.6601,lng:126.8450},{lat:37.6590,lng:126.8520},
+        {lat:37.6520,lng:126.8580},{lat:37.6490,lng:126.8530},
+        {lat:37.6480,lng:126.8450},{lat:37.6510,lng:126.8380},
+        {lat:37.6564,lng:126.8317}
+      ],
       points:[
-        {point_cd:"P0",name:"출발", distance:0,     lat:37.6564,lng:126.8317},
-        {point_cd:"P2",name:"5K",  distance:5,     lat:37.6601,lng:126.8450},
-        {point_cd:"P3",name:"10K", distance:10,    lat:37.6520,lng:126.8580},
-        {point_cd:"P4",name:"15K", distance:15,    lat:37.6480,lng:126.8450},
-        {point_cd:"P5",name:"도착", distance:21.098,lat:37.6564,lng:126.8317}
+        {point_cd:"P0",name:"출발", distance:0,      lat:37.6564,lng:126.8317},
+        {point_cd:"P2",name:"5K",  distance:5,      lat:37.6601,lng:126.8450},
+        {point_cd:"P3",name:"10K", distance:10,     lat:37.6520,lng:126.8580},
+        {point_cd:"P4",name:"15K", distance:15,     lat:37.6480,lng:126.8450},
+        {point_cd:"P5",name:"도착", distance:21.098, lat:37.6564,lng:126.8317}
       ]}}
 };
 
-// 테스트용 모의 데이터 (실 API 연결 전)
+// 테스트용 모의 데이터
 const MOCK = {
   141:{
-    "1001":{num:"1001",name:"김민준",gender:"M",pace_nettime:"04:30",result_nettime:null,records:[{point_cd:"P0",time:"07:30:00"},{point_cd:"P2",time:"07:52:30"},{point_cd:"P3",time:"08:15:20"},{point_cd:"P4",time:"08:38:10"}]},
-    "2033":{num:"2033",name:"박서연",gender:"F",pace_nettime:"05:10",result_nettime:null,records:[{point_cd:"P0",time:"07:30:00"},{point_cd:"P2",time:"07:55:50"},{point_cd:"P3",time:"08:22:10"}]},
-    "5512":{num:"5512",name:"이지호",gender:"M",pace_nettime:"06:00",result_nettime:null,records:[{point_cd:"P0",time:"07:30:00"},{point_cd:"P2",time:"08:00:00"}]},
+    "1001":{num:"1001",name:"김민준",gender:"M",pace_nettime:"04:30",records:[{point_cd:"P0",time:"07:30:00"},{point_cd:"P2",time:"07:52:30"},{point_cd:"P3",time:"08:15:20"},{point_cd:"P4",time:"08:38:10"}]},
+    "2033":{num:"2033",name:"박서연",gender:"F",pace_nettime:"05:10",records:[{point_cd:"P0",time:"07:30:00"},{point_cd:"P2",time:"07:55:50"},{point_cd:"P3",time:"08:22:10"}]},
+    "5512":{num:"5512",name:"이지호",gender:"M",pace_nettime:"06:00",records:[{point_cd:"P0",time:"07:30:00"},{point_cd:"P2",time:"08:00:00"}]},
     "9999":{num:"9999",name:"최수아",gender:"F",pace_nettime:"04:55",result_nettime:"01:44:03",records:[{point_cd:"P0",time:"07:30:00"},{point_cd:"P2",time:"07:54:35"},{point_cd:"P3",time:"08:19:10"},{point_cd:"P4",time:"08:43:45"},{point_cd:"P5",time:"09:14:03"}]},
     "21296":{num:"21296",name:"유지연",gender:"F",pace_nettime:"05:03",result_nettime:"01:46:46",records:[{point_cd:"P0",time:"07:30:00"},{point_cd:"P2",time:"07:55:15"},{point_cd:"P3",time:"08:20:30"},{point_cd:"P4",time:"08:45:50"},{point_cd:"P5",time:"09:16:46"}]}
   }
@@ -236,33 +255,101 @@ const CHEER_SPOTS = {
 const COLORS=['#ff5c00','#00e5a0','#4d9fff','#f0c040','#d44fff','#ff4060'];
 
 let currentEventId=141, runners=[], selectedBib=null;
-let map, courseLayer, cpMarkers=[];
+let map, courseBaseLine, cpMarkers=[];
 
 // ── 유틸 ──────────────────────────────────────────────────────────────────
 function t2s(t){if(!t)return 0;const p=t.split(':');return p.length===3?+p[0]*3600+ +p[1]*60+parseFloat(p[2]):0;}
 function s2hm(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;}
 function fmtTime(t){if(!t)return'--:--';const p=t.split(':');return`${p[0]}:${p[1]}`;}
-function lerpLL(a,b,t){return{lat:a.lat+(b.lat-a.lat)*t,lng:a.lng+(b.lng-a.lng)*t};}
+
+// ── 경로 유틸: path 배열을 거리 비율(0~1)로 잘라서 좌표 반환 ───────────────
+function pathSegmentLengths(path){
+  const lens=[];
+  for(let i=1;i<path.length;i++){
+    const a=path[i-1],b=path[i];
+    const dlat=b.lat-a.lat, dlng=b.lng-a.lng;
+    lens.push(Math.sqrt(dlat*dlat+dlng*dlng));
+  }
+  return lens;
+}
+
+// path 위에서 전체 길이의 frac(0~1) 지점 좌표 반환
+function pointAtFrac(path, frac){
+  const lens = pathSegmentLengths(path);
+  const total = lens.reduce((a,b)=>a+b,0);
+  let target = frac * total;
+  for(let i=0;i<lens.length;i++){
+    if(target<=lens[i]){
+      const t=target/lens[i];
+      const a=path[i],b=path[i+1];
+      return {lat:a.lat+(b.lat-a.lat)*t, lng:a.lng+(b.lng-a.lng)*t};
+    }
+    target-=lens[i];
+  }
+  return path[path.length-1];
+}
+
+// path를 frac 지점까지 잘라서 좌표 배열 반환
+function pathUpToFrac(path, frac){
+  if(frac<=0)return[path[0]];
+  if(frac>=1)return path;
+  const lens=pathSegmentLengths(path);
+  const total=lens.reduce((a,b)=>a+b,0);
+  let target=frac*total;
+  const result=[path[0]];
+  for(let i=0;i<lens.length;i++){
+    if(target<=lens[i]){
+      const t=target/lens[i];
+      const a=path[i],b=path[i+1];
+      result.push({lat:a.lat+(b.lat-a.lat)*t,lng:a.lng+(b.lng-a.lng)*t});
+      break;
+    }
+    target-=lens[i];
+    result.push(path[i+1]);
+  }
+  return result;
+}
 
 // ── 위치 추정 ─────────────────────────────────────────────────────────────
-function estimatePos(player,event){
+function estimatePos(player, event){
   const pts=event.course.points, recs=player.records||[];
   if(!recs.length)return null;
   const lastRec=recs[recs.length-1];
   const lastPt=pts.find(p=>p.point_cd===lastRec.point_cd);
   if(!lastPt)return null;
-  if(lastPt.point_cd==='P5')return{lat:lastPt.lat,lng:lastPt.lng,dist:lastPt.distance,finished:true};
+
+  // 완주
+  if(lastPt.point_cd==='P5'){
+    const frac=1;
+    const coord=pointAtFrac(event.course.path,frac);
+    return{...coord,dist:event.course.distance,frac,finished:true};
+  }
+
   const gunMs=new Date(`${event.date}T${event.guntime}`).getTime();
   const elapsed=(Date.now()-gunMs)/1000;
   const sinceCP=elapsed-t2s(lastRec.time);
-  const[pm,ps]=(player.pace_nettime||'06:00').split(':').map(Number);
-  const paceSec=pm*60+ps;
+
+  // 직전 구간 페이스로 갱신 (더 현실적)
+  let paceSec;
+  const rIdx=recs.length-1;
+  if(rIdx>0){
+    const prev=recs[rIdx-1], prevPt=pts.find(p=>p.point_cd===prev.point_cd);
+    if(prevPt){
+      const timeDiff=t2s(lastRec.time)-t2s(prev.time);
+      const distDiff=lastPt.distance-prevPt.distance;
+      paceSec=distDiff>0?timeDiff/distDiff:60*6;
+    }
+  }
+  if(!paceSec){
+    const[pm,ps]=(player.pace_nettime||'06:00').split(':').map(Number);
+    paceSec=pm*60+ps;
+  }
+
   const moved=Math.max(0,sinceCP/paceSec);
   const estDist=Math.min(lastPt.distance+moved,event.course.distance);
-  const nextPt=pts.find(p=>p.distance>lastPt.distance);
-  if(!nextPt)return{lat:lastPt.lat,lng:lastPt.lng,dist:estDist,finished:false};
-  const pos=lerpLL(lastPt,nextPt,Math.min(1,moved/(nextPt.distance-lastPt.distance)));
-  return{...pos,dist:estDist,finished:false};
+  const frac=estDist/event.course.distance;
+  const coord=pointAtFrac(event.course.path,frac);
+  return{...coord,dist:estDist,frac,finished:false};
 }
 
 function calcETA(player,event){
@@ -275,44 +362,142 @@ function calcETA(player,event){
 }
 
 // ── API ───────────────────────────────────────────────────────────────────
-async function fetchPlayer(eventId,bib){
-  /* 실제 API 연결 시:
-  const res=await fetch(`https://www.myresult.co.kr/api/event/${eventId}/player/${bib}`);
-  if(!res.ok)throw new Error('선수를 찾을 수 없습니다');
-  return await res.json();
-  */
-  await new Promise(r=>setTimeout(r,500));
-  const p=MOCK[eventId]?.[String(bib)];
-  if(!p)throw new Error(`배번 ${bib}를 찾을 수 없습니다`);
-  return p;
+const PROXY = 'https://test123-production-9339.up.railway.app';
+
+async function fetchPlayer(eventId, bib) {
+  // 1) 배번으로 선수 검색
+  const searchRes = await fetch(PROXY + '/api/event/' + eventId + '/player?q=' + bib);
+  if (!searchRes.ok) throw new Error('서버 연결에 실패했습니다');
+  const searchData = await searchRes.json();
+  if (!searchData || searchData.length === 0) throw new Error('배번 ' + bib + '를 찾을 수 없습니다');
+
+  // 2) num으로 상세 조회 (records 포함)
+  const num = searchData[0].num;
+  const detailRes = await fetch(PROXY + '/api/event/' + eventId + '/player/' + num);
+  if (!detailRes.ok) throw new Error('선수 정보를 불러올 수 없습니다');
+  const detail = await detailRes.json();
+
+  // 3) pace 없으면 records에서 직접 계산
+  if (!detail.pace_nettime && detail.records && detail.records.length >= 2) {
+    const recs = detail.records;
+    const last = recs[recs.length - 1];
+    const prev = recs[recs.length - 2];
+    const pts = EVENTS[eventId] && EVENTS[eventId].course.points;
+    const lastPt = pts && pts.find(function(p){ return p.point_cd === last.point_cd; });
+    const prevPt = pts && pts.find(function(p){ return p.point_cd === prev.point_cd; });
+    if (lastPt && prevPt) {
+      const timeDiff = t2s(last.time) - t2s(prev.time);
+      const distDiff = lastPt.distance - prevPt.distance;
+      if (distDiff > 0) {
+        const paceSec = timeDiff / distDiff;
+        const pm = Math.floor(paceSec / 60);
+        const ps = Math.floor(paceSec % 60);
+        detail.pace_nettime = String(pm).padStart(2,'0') + ':' + String(ps).padStart(2,'0');
+      }
+    }
+  }
+  return detail;
 }
 
-// ── 지도 ─────────────────────────────────────────────────────────────────
+// ── 지도 초기화 ───────────────────────────────────────────────────────────
 function initMap(event){
   const c=event.course.path[0];
   if(!map){
     map=L.map('map',{center:[c.lat,c.lng],zoom:14,zoomControl:false});
     L.control.zoom({position:'bottomright'}).addTo(map);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'©OpenStreetMap ©CARTO',maxZoom:19}).addTo(map);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      {attribution:'©OpenStreetMap ©CARTO',maxZoom:19}).addTo(map);
   } else {map.setView([c.lat,c.lng],14);}
-  if(courseLayer)courseLayer.remove();
+
+  // 기존 제거
+  if(courseBaseLine)courseBaseLine.remove();
   cpMarkers.forEach(m=>m.remove());cpMarkers=[];
-  courseLayer=L.polyline(event.course.path.map(p=>[p.lat,p.lng]),{color:'#ff5c00',weight:3,opacity:.55,dashArray:'6,6'}).addTo(map);
+
+  // 베이스 코스 라인 (회색 점선)
+  courseBaseLine=L.polyline(event.course.path.map(p=>[p.lat,p.lng]),
+    {color:'#3a4050',weight:4,opacity:.8,dashArray:'8,5'}).addTo(map);
+
+  // 체크포인트 마커
   event.course.points.forEach(pt=>{
-    const icon=L.divIcon({html:`<div style="background:#1f2530;border:2px solid #ff5c00;color:#e8eaf0;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;padding:3px 7px;border-radius:3px;white-space:nowrap;">${pt.name}</div>`,className:'',iconAnchor:[0,0]});
+    const icon=L.divIcon({
+      html:`<div style="background:#1a1e28;border:2px solid #3a4050;color:#7080a0;
+        font-family:'Space Mono',monospace;font-size:9px;font-weight:700;
+        padding:3px 7px;border-radius:3px;white-space:nowrap;">${pt.name}</div>`,
+      className:'',iconAnchor:[0,0]
+    });
     cpMarkers.push(L.marker([pt.lat,pt.lng],{icon}).addTo(map));
   });
 }
 
+// ── 마커 & 진행 경로 업데이트 ─────────────────────────────────────────────
 function updateMarkers(){
   const ev=EVENTS[currentEventId];
   runners.forEach(r=>{
     const pos=estimatePos(r.player,ev);
     if(!pos)return;
-    const icon=L.divIcon({html:`<div style="background:${r.color};color:#fff;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;padding:4px 8px;border-radius:20px;box-shadow:0 2px 10px rgba(0,0,0,.6);white-space:nowrap;border:2px solid rgba(255,255,255,.2)">#${r.player.num}</div>`,className:'',iconAnchor:[20,12]});
-    if(r.marker){r.marker.setLatLng([pos.lat,pos.lng]);r.marker.setIcon(icon);}
-    else{r.marker=L.marker([pos.lat,pos.lng],{icon}).addTo(map).on('click',()=>openDetail(r.bib));}
+
+    // ── 진행 경로 레이어 (이미 지나간 구간을 runner 색으로 그림) ──
+    const progressPath=pathUpToFrac(ev.course.path, pos.frac||0);
+    if(r.progressLine){
+      r.progressLine.setLatLngs(progressPath.map(p=>[p.lat,p.lng]));
+    } else {
+      r.progressLine=L.polyline(progressPath.map(p=>[p.lat,p.lng]),
+        {color:r.color,weight:4,opacity:.85}).addTo(map);
+    }
+
+    // ── 주자 마커 (원형 — 이름 or 프로필 사진) ──
+    const inner = r.photo
+      ? `<img src="${r.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+      : `<span style="font-size:10px;font-weight:700;font-family:'Noto Sans KR',sans-serif;color:#fff;white-space:nowrap;">${r.player.name}</span>`;
+
+    const icon=L.divIcon({
+      html:`<div style="
+        width:${r.photo?36:Math.max(36,r.player.name.length*10+16)}px;
+        height:36px;border-radius:18px;
+        background:${r.color};
+        border:3px solid #fff;
+        box-shadow:0 2px 12px rgba(0,0,0,.7);
+        display:flex;align-items:center;justify-content:center;
+        overflow:hidden;
+        cursor:pointer;">
+        ${inner}
+      </div>`,
+      className:'',
+      iconAnchor:[18,18]
+    });
+
+    if(r.marker){
+      r.marker.setLatLng([pos.lat,pos.lng]);
+      r.marker.setIcon(icon);
+    } else {
+      r.marker=L.marker([pos.lat,pos.lng],{icon,zIndexOffset:1000})
+        .addTo(map).on('click',()=>openDetail(r.bib));
+    }
   });
+}
+
+// ── 프로필 사진 업로드 ────────────────────────────────────────────────────
+function triggerPhotoUpload(bib){
+  const input=document.getElementById('photo-input-'+bib);
+  if(input)input.click();
+}
+
+function handlePhotoUpload(bib, file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    const r=runners.find(r=>r.bib===bib);
+    if(!r)return;
+    r.photo=e.target.result;
+    // 카드 아바타 업데이트
+    const avatarEl=document.getElementById('avatar-'+bib);
+    if(avatarEl)avatarEl.innerHTML=`<img src="${r.photo}" style="width:100%;height:100%;object-fit:cover;">`;
+    // 지도 마커 업데이트
+    updateMarkers();
+    // 상세 패널 열려있으면 업데이트
+    if(selectedBib===bib)openDetail(bib);
+  };
+  reader.readAsDataURL(file);
 }
 
 // ── Detail Panel ─────────────────────────────────────────────────────────
@@ -326,10 +511,20 @@ function openDetail(bib){
   const recs=player.records||[];
   const passedCds=recs.map(rc=>rc.point_cd);
 
+  // 헤더
   document.getElementById('dpBib').textContent='#'+player.num;
   document.getElementById('dpBib').style.color=r.color;
-  document.getElementById('dpName').textContent=player.name;
-  document.getElementById('dpGender').textContent=player.gender==='M'?'남':'여';
+  document.getElementById('dpNameGender').textContent=`${player.name} · ${player.gender==='M'?'남':'여'}`;
+
+  // 패널 아바타
+  const dpAvatar=document.getElementById('dpAvatar');
+  dpAvatar.style.setProperty('--dp-color',r.color);
+  dpAvatar.style.borderColor=r.color;
+  if(r.photo){
+    dpAvatar.innerHTML=`<img src="${r.photo}" style="width:100%;height:100%;object-fit:cover;">`;
+  } else {
+    dpAvatar.innerHTML=`<div class="dp-avatar-placeholder" style="color:${r.color}">${player.name[0]}</div>`;
+  }
 
   // 타임라인
   const tl=document.getElementById('dpTl');tl.innerHTML='';
@@ -339,7 +534,6 @@ function openDetail(bib){
     const lastPassedIdx=pts.findIndex(p=>p.point_cd===passedCds[passedCds.length-1]);
     const isCurrent=!passed&&i===lastPassedIdx+1;
 
-    // 구간 분할 기록
     let splitText='';
     if(passed&&i>0){
       const prevRec=recs.find(rc=>rc.point_cd===pts[i-1]?.point_cd);
@@ -347,40 +541,36 @@ function openDetail(bib){
         const diff=t2s(rec.time)-t2s(prevRec.time);
         const dist=pt.distance-pts[i-1].distance;
         const pace=diff/dist;
-        const pm2=Math.floor(pace/60),ps2=Math.floor(pace%60);
-        splitText=`구간 ${s2hm(diff)} · 페이스 ${pm2}'${String(ps2).padStart(2,'0')}"`;
+        splitText=`구간 ${s2hm(diff)} · 페이스 ${Math.floor(pace/60)}'${String(Math.floor(pace%60)).padStart(2,'0')}"`;
       }
     }
 
-    // 시각 표시
     let timeStr='--:--',tClass='t-none';
     if(passed){
       timeStr=fmtTime(rec.time);tClass='t-passed';
-    } else {
+    } else if(recs.length>0){
       const lastRec=recs[recs.length-1];
-      if(lastRec){
-        const lpt=pts.find(p=>p.point_cd===lastRec.point_cd);
-        const[pm2,ps2]=(player.pace_nettime||'06:00').split(':').map(Number);
-        const paceSec=pm2*60+ps2;
-        const distLeft=pt.distance-(lpt?.distance||0);
-        const sec=t2s(lastRec.time)+distLeft*paceSec;
-        // 대회 날짜 기준 절대 시각으로 변환
-        const base=new Date(`${ev.date}T00:00:00`).getTime();
-        const d=new Date(base+sec*1000);
-        timeStr=d.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
-        tClass='t-est';
-      }
+      const lpt=pts.find(p=>p.point_cd===lastRec.point_cd);
+      const[pm2,ps2]=(player.pace_nettime||'06:00').split(':').map(Number);
+      const paceSec=pm2*60+ps2;
+      const distLeft=pt.distance-(lpt?.distance||0);
+      const sec=t2s(lastRec.time)+distLeft*paceSec;
+      const base=new Date(`${ev.date}T00:00:00`).getTime();
+      timeStr=new Date(base+sec*1000).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+      tClass='t-est';
     }
 
     const row=document.createElement('div');row.className='tl-row';
     row.innerHTML=`
       <div class="tl-spine">
-        <div class="tl-dot ${passed?'passed':isCurrent?'current':''}" style="${passed?'background:'+r.color+';border-color:'+r.color:isCurrent?'background:'+r.color+';border-color:'+r.color:''}"></div>
+        <div class="tl-dot ${passed?'passed':isCurrent?'current':''}"
+          style="${passed||isCurrent?'background:'+r.color+';border-color:'+r.color:''}"></div>
         <div class="tl-line ${passed?'passed':''}" style="${passed?'background:'+r.color:''}"></div>
       </div>
       <div class="tl-content">
         <div class="tl-pt-name" style="color:${passed||isCurrent?r.color:'var(--muted)'}">
-          ${pt.name} <span style="font-size:9px;color:var(--muted);font-weight:400;font-family:'Space Mono',monospace">${pt.distance}km</span>
+          ${pt.name}
+          <span style="font-size:9px;color:var(--muted);font-weight:400;font-family:'Space Mono',monospace">${pt.distance}km</span>
         </div>
         <div class="tl-time ${tClass}">${timeStr}</div>
         ${splitText?`<div class="tl-split">${splitText}</div>`:''}
@@ -388,12 +578,10 @@ function openDetail(bib){
     tl.appendChild(row);
   });
 
-  // ETA
-  const eta=calcETA(player,ev);
-  document.getElementById('dpEtaVal').textContent=eta;
+  document.getElementById('dpEtaVal').textContent=calcETA(player,ev);
   document.getElementById('dpPaceLine').textContent=`현재 페이스 ${player.pace_nettime||'--'} /km`;
-
   document.getElementById('detailPanel').classList.add('show');
+
   const pos=estimatePos(player,ev);
   if(pos&&map)map.setView([pos.lat,pos.lng],16,{animate:true});
 }
@@ -404,11 +592,13 @@ function closeDetail(){
   document.querySelectorAll('.runner-card').forEach(c=>c.classList.remove('active-card'));
 }
 
-// ── 러너 카드 ─────────────────────────────────────────────────────────────
+// ── 러너 카드 렌더링 ──────────────────────────────────────────────────────
 function renderRunners(){
   const ev=EVENTS[currentEventId],list=document.getElementById('runnerList');
   if(!runners.length){
-    list.innerHTML=`<div class="empty-state"><div class="empty-icon">🏃</div><div class="empty-text">배번을 입력하고<br>+ 버튼 또는 Enter를 눌러주세요<br><span style="font-size:11px;opacity:.6">테스트 배번: 1001, 2033, 5512, 9999, 21296</span></div></div>`;
+    list.innerHTML=`<div class="empty-state"><div class="empty-icon">🏃</div>
+      <div class="empty-text">배번을 입력하고<br>+ 버튼 또는 Enter를 눌러주세요<br>
+      <span style="font-size:11px;opacity:.6">테스트 배번: 1001, 2033, 5512, 9999, 21296</span></div></div>`;
     document.getElementById('cheerPanel').style.display='none';return;
   }
   list.innerHTML='';
@@ -416,17 +606,29 @@ function renderRunners(){
     const pos=estimatePos(r.player,ev);
     const pct=pos?Math.min(100,(pos.dist/ev.course.distance)*100):0;
     const eta=calcETA(r.player,ev);
+
     const card=document.createElement('div');
     card.className='runner-card'+(selectedBib===r.bib?' active-card':'');
     card.id='card-'+r.bib;
     card.style.setProperty('--rc',r.color);
+
+    const avatarContent=r.photo
+      ?`<img src="${r.photo}" style="width:100%;height:100%;object-fit:cover;">`
+      :`<span class="avatar-placeholder" style="color:${r.color}">${r.player.name[0]}</span>`;
+
     card.innerHTML=`
       <div class="runner-top">
-        <div class="runner-id-name">
-          <span class="runner-bib" style="color:${r.color}">#${r.player.num}</span>
-          <span class="runner-name">${r.player.name} (${r.player.gender==='M'?'남':'여'})</span>
+        <div class="runner-left">
+          <div class="card-avatar" id="avatar-${r.bib}" style="border-color:${r.color}">
+            ${avatarContent}
+            <input type="file" id="photo-input-${r.bib}" accept="image/*">
+          </div>
+          <div class="runner-id-name">
+            <span class="runner-bib" style="color:${r.color}">#${r.player.num}</span>
+            <span class="runner-name">${r.player.name} · ${r.player.gender==='M'?'남':'여'}</span>
+          </div>
         </div>
-        <button class="btn-remove" id="rm-${r.bib}">×</button>
+        <button class="btn-remove">×</button>
       </div>
       <div class="prog-bg"><div class="prog-fill" style="width:${pct}%;background:${r.color}"></div></div>
       <div class="prog-labels">
@@ -439,11 +641,28 @@ function renderRunners(){
         <div class="stat-box"><div class="stat-label">현재위치</div><div class="stat-val">${pos?pos.dist.toFixed(1)+'K':'--'}</div></div>
         <div class="stat-box"><div class="stat-label">예상도착</div><div class="stat-val hl">${eta}</div></div>
       </div>`;
-    card.addEventListener('click',()=>openDetail(r.bib));
-    document.getElementById('rm-'+r.bib)?.addEventListener('click',(e)=>{e.stopPropagation();removeRunner(r.bib);});
+
+    // 이벤트 바인딩
+    card.addEventListener('click', () => openDetail(r.bib));
+
+    card.querySelector('.btn-remove').addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeRunner(r.bib);
+    });
+
+    const fileInput = card.querySelector('input[type=file]');
+    fileInput.addEventListener('click', (e) => e.stopPropagation());
+    fileInput.addEventListener('change', (e) => {
+      e.stopPropagation();
+      if (e.target.files[0]) handlePhotoUpload(r.bib, e.target.files[0]);
+    });
+
+    card.querySelector('.card-avatar').addEventListener('click', (e) => {
+      e.stopPropagation();
+      fileInput.click();
+    });
+
     list.appendChild(card);
-    // 삭제 버튼 이벤트 재연결 (innerHTML 덮어쓰기 후)
-    card.querySelector('.btn-remove').addEventListener('click',(e)=>{e.stopPropagation();removeRunner(r.bib);});
   });
   renderCheer();
 }
@@ -462,11 +681,14 @@ function renderCheer(){
       return Date.now()+(dist*(pm*60+ps))*1000;
     }).filter(t=>t!==Infinity);
     const earliest=etas.length?new Date(Math.min(...etas)).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}):'--:--';
-    return`<div class="cheer-item" onclick="map.setView([${sp.lat},${sp.lng}],17,{animate:true})"><span class="cheer-dist">${sp.dist}</span><div><div class="cheer-name">${sp.name}</div><div class="cheer-eta">첫 주자 예상 ${earliest}</div></div><span>📍</span></div>`;
+    return`<div class="cheer-item" onclick="map.setView([${sp.lat},${sp.lng}],17,{animate:true})">
+      <span class="cheer-dist">${sp.dist}</span>
+      <div><div class="cheer-name">${sp.name}</div><div class="cheer-eta">첫 주자 예상 ${earliest}</div></div>
+      <span>📍</span></div>`;
   }).join('');
 }
 
-// ── 배번 추가/삭제 ────────────────────────────────────────────────────────
+// ── 배번 추가/삭제 ─────────────────────────────────────────────────────────
 async function addRunner(){
   const input=document.getElementById('bibInput');
   const bib=input.value.trim();if(!bib)return;
@@ -477,7 +699,7 @@ async function addRunner(){
   try{
     const player=await fetchPlayer(currentEventId,bib);
     const color=COLORS[runners.length%COLORS.length];
-    runners.push({bib,player,color,marker:null});
+    runners.push({bib,player,color,marker:null,progressLine:null,photo:null});
     input.value='';
     renderRunners();updateMarkers();
     openDetail(bib);
@@ -489,6 +711,7 @@ async function addRunner(){
 function removeRunner(bib){
   const r=runners.find(r=>r.bib===bib);
   if(r?.marker)r.marker.remove();
+  if(r?.progressLine)r.progressLine.remove();
   runners=runners.filter(r=>r.bib!==bib);
   if(selectedBib===bib)closeDetail();
   renderRunners();
@@ -499,7 +722,10 @@ function selectEvent(id){
   document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('btn'+id).classList.add('active');
   document.getElementById('eventName').textContent=EVENTS[id].name;
-  runners.forEach(r=>{if(r.marker){r.marker.remove();r.marker=null;}});
+  runners.forEach(r=>{
+    if(r.marker){r.marker.remove();r.marker=null;}
+    if(r.progressLine){r.progressLine.remove();r.progressLine=null;}
+  });
   runners=[];closeDetail();initMap(EVENTS[id]);renderRunners();
 }
 
@@ -511,13 +737,18 @@ function showToast(msg,type=''){
   setTimeout(()=>t.remove(),2500);
 }
 
-// ── 초기화 ───────────────────────────────────────────────────────────────
+// ── 초기화 ────────────────────────────────────────────────────────────────
 window.addEventListener('load',()=>{
   selectEvent(141);
   document.getElementById('addBtn').onclick=addRunner;
   document.getElementById('bibInput').addEventListener('keydown',e=>{if(e.key==='Enter')addRunner();});
-  setInterval(()=>{renderRunners();updateMarkers();if(selectedBib)openDetail(selectedBib);},30000);
-  setInterval(()=>{document.getElementById('clockEl').textContent=new Date().toLocaleTimeString('ko-KR');},1000);
+  setInterval(()=>{
+    renderRunners();updateMarkers();
+    if(selectedBib)openDetail(selectedBib);
+  },30000);
+  setInterval(()=>{
+    document.getElementById('clockEl').textContent=new Date().toLocaleTimeString('ko-KR');
+  },1000);
 });
 </script>
 </body>
