@@ -144,7 +144,7 @@
     <div class="search-area">
       <div class="search-label">배번 검색</div>
       <div class="search-row">
-        <input class="search-input" id="bibInput" type="number" placeholder="배번 입력 후 Enter"/>
+        <input class="search-input" id="bibInput" type="text" placeholder="배번 또는 이름 입력"/>
         <button class="btn-add" id="addBtn">+</button>
       </div>
     </div>
@@ -364,40 +364,108 @@ function calcETA(player,event){
 // ── API ───────────────────────────────────────────────────────────────────
 const PROXY = 'https://test123-production-9339.up.railway.app';
 
-async function fetchPlayer(eventId, bib) {
-  // 1) 배번으로 선수 검색
-  const searchRes = await fetch(PROXY + '/api/event/' + eventId + '/player?q=' + bib);
-  if (!searchRes.ok) throw new Error('서버 연결에 실패했습니다');
-  const searchData = await searchRes.json();
-  if (!searchData || searchData.length === 0) throw new Error('배번 ' + bib + '를 찾을 수 없습니다');
+// 실제 API의 time 필드는 "HH:MM:SS.ss" 절대 시각 형태
+// t2s는 그대로 쓰되, 구간 diff 계산에 사용
+function calcPace(timeA, timeB, distKm) {
+  const diff = Math.abs(t2s(timeA) - t2s(timeB));
+  if (!distKm || distKm === 0) return null;
+  const paceSec = diff / distKm;
+  return { diff, paceSec,
+    str: `${Math.floor(paceSec/60)}'${String(Math.floor(paceSec%60)).padStart(2,'0')}"` };
+}
 
-  // 2) num으로 상세 조회 (records 포함)
-  const num = searchData[0].num;
-  const detailRes = await fetch(PROXY + '/api/event/' + eventId + '/player/' + num);
-  if (!detailRes.ok) throw new Error('선수 정보를 불러올 수 없습니다');
+async function fetchPlayer(eventId, bib) {
+  const searchRes = await fetch(`${PROXY}/api/event/${eventId}/player?q=${encodeURIComponent(bib)}`);
+  if (!searchRes.ok) throw new Error('서버 연결 실패');
+  const searchData = await searchRes.json();
+  if (!searchData || !searchData.length) throw new Error(`"${bib}" 검색 결과가 없습니다`);
+
+  // 여러 명이면 선택 팝업 표시
+  if (searchData.length > 1) {
+    return await showSearchResults(searchData, eventId);
+  }
+
+  // 1명이면 바로 상세 조회
+  return await fetchPlayerDetail(eventId, searchData[0].num);
+}
+
+async function fetchPlayerDetail(eventId, num) {
+  const detailRes = await fetch(`${PROXY}/api/event/${eventId}/player/${num}`);
+  if (!detailRes.ok) throw new Error('선수 정보 조회 실패');
   const detail = await detailRes.json();
 
-  // 3) pace 없으면 records에서 직접 계산
+  // pace_nettime 없으면 records에서 직접 계산
   if (!detail.pace_nettime && detail.records && detail.records.length >= 2) {
     const recs = detail.records;
+    const pts = EVENTS[eventId]?.course?.points;
     const last = recs[recs.length - 1];
     const prev = recs[recs.length - 2];
-    const pts = EVENTS[eventId] && EVENTS[eventId].course.points;
-    const lastPt = pts && pts.find(function(p){ return p.point_cd === last.point_cd; });
-    const prevPt = pts && pts.find(function(p){ return p.point_cd === prev.point_cd; });
+    const lastPt = pts?.find(p => p.point_cd === last.point_cd);
+    const prevPt = pts?.find(p => p.point_cd === prev.point_cd);
     if (lastPt && prevPt) {
-      const timeDiff = t2s(last.time) - t2s(prev.time);
-      const distDiff = lastPt.distance - prevPt.distance;
-      if (distDiff > 0) {
-        const paceSec = timeDiff / distDiff;
-        const pm = Math.floor(paceSec / 60);
-        const ps = Math.floor(paceSec % 60);
-        detail.pace_nettime = String(pm).padStart(2,'0') + ':' + String(ps).padStart(2,'0');
+      const pace = calcPace(last.time, prev.time, lastPt.distance - prevPt.distance);
+      if (pace) {
+        const pm = Math.floor(pace.paceSec / 60);
+        const ps = Math.floor(pace.paceSec % 60);
+        detail.pace_nettime = `${String(pm).padStart(2,'0')}:${String(ps).padStart(2,'0')}`;
       }
     }
   }
+  console.log('📦 records 원본 데이터:', JSON.stringify(detail.records, null, 2));
   return detail;
 }
+
+// 검색 결과 여러 명일 때 선택 팝업
+function showSearchResults(results, eventId) {
+  return new Promise((resolve, reject) => {
+    // 기존 팝업 제거
+    document.getElementById('searchPopup')?.remove();
+
+    const popup = document.createElement('div');
+    popup.id = 'searchPopup';
+    popup.style.cssText = `
+      position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+      z-index:9999;background:#11141a;border:1px solid #1f2530;
+      border-radius:12px;padding:16px;width:300px;
+      box-shadow:0 16px 48px rgba(0,0,0,.8);
+    `;
+
+    popup.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-size:12px;font-weight:700;color:#5a6070;letter-spacing:.08em;text-transform:uppercase;">검색 결과 ${results.length}명</span>
+        <button onclick="document.getElementById('searchPopup').remove()" style="background:none;border:none;color:#5a6070;font-size:18px;cursor:pointer;line-height:1;">×</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;">
+        ${results.map(p => `
+          <div onclick="selectFromSearch('${p.num}',${eventId})" style="
+            background:#181c24;border:1px solid #1f2530;border-radius:8px;
+            padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:10px;
+            transition:border-color .15s;" onmouseover="this.style.borderColor='#ff5c00'" onmouseout="this.style.borderColor='#1f2530'">
+            <span style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:#ff5c00;min-width:50px">#${p.num}</span>
+            <div>
+              <div style="font-size:13px;font-weight:600;">${p.name}</div>
+              <div style="font-size:11px;color:#5a6070;">${p.gender === 'M' ? '남' : '여'} · ${p.team_name || ''}</div>
+            </div>
+          </div>`).join('')}
+      </div>`;
+
+    document.body.appendChild(popup);
+
+    // 전역에 resolve 저장
+    window._searchResolve = resolve;
+    window._searchReject = reject;
+  });
+}
+
+window.selectFromSearch = async function(num, eventId) {
+  document.getElementById('searchPopup')?.remove();
+  try {
+    const detail = await fetchPlayerDetail(eventId, num);
+    window._searchResolve?.(detail);
+  } catch(e) {
+    window._searchReject?.(e);
+  }
+};
 
 // ── 지도 초기화 ───────────────────────────────────────────────────────────
 function initMap(event){
@@ -537,11 +605,11 @@ function openDetail(bib){
     let splitText='';
     if(passed&&i>0){
       const prevRec=recs.find(rc=>rc.point_cd===pts[i-1]?.point_cd);
-      if(prevRec){
-        const diff=t2s(rec.time)-t2s(prevRec.time);
-        const dist=pt.distance-pts[i-1].distance;
-        const pace=diff/dist;
-        splitText=`구간 ${s2hm(diff)} · 페이스 ${Math.floor(pace/60)}'${String(Math.floor(pace%60)).padStart(2,'0')}"`;
+      if(prevRec && rec){
+        const pace = calcPace(rec.time, prevRec.time, pt.distance - pts[i-1].distance);
+        if(pace && pace.diff > 0){
+          splitText=`구간 ${s2hm(pace.diff)} · 페이스 ${pace.str}`;
+        }
       }
     }
 
