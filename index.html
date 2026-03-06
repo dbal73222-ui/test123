@@ -383,7 +383,6 @@ async function fetchPlayer(eventId, bib) {
   const searchData = await searchRes.json();
   console.log('🔍 검색 원본 결과:', JSON.stringify(searchData.map(p => ({num: p.num, name: p.name, gender: p.gender, course_cd: p.course_cd})), null, 2));
   if (!searchData || !searchData.length) throw new Error(`"${bib}" 검색 결과가 없습니다`);
-
   const isNumeric = /^\d+$/.test(bib.trim());
 
   if (isNumeric) {
@@ -407,6 +406,7 @@ async function fetchPlayerDetail(eventId, num) {
   const detailRes = await fetch(`${PROXY}/api/event/${eventId}/player/${num}`);
   if (!detailRes.ok) throw new Error('선수 정보 조회 실패');
   const detail = await detailRes.json();
+  console.log(`📋 선수 상세 (event:${eventId}, num:${num}):`, JSON.stringify({name: detail.name, records: detail.records?.length, event_id: detail.event_id}, null, 2));
 
   // pace_nettime 없으면 records에서 직접 계산
   if (!detail.pace_nettime && detail.records && detail.records.length >= 2) {
